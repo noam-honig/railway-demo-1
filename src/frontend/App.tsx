@@ -1,34 +1,35 @@
-import { useState } from "react";
-import { Task } from "./Task"
+import { useEffect, useState } from "react";
+import { remult } from "remult";
+import { Task } from "../shared/Task"
+import { TasksController } from "../shared/TasksController";
+
+const taskRepo = remult.repo(Task);
 
 function App() {
   const [tasks, setTasks] = useState<Task[]>([
-    { id: 1, title: "Setup", completed: true },
-    { id: 2, title: "Entities", completed: false },
-    { id: 3, title: "Paging, Sorting and Filtering", completed: false },
-    { id: 4, title: "CRUD Operations", completed: false },
-    { id: 5, title: "Validation", completed: false },
-    { id: 6, title: "Backend methods", completed: false },
-    { id: 7, title: "Database", completed: false },
-    { id: 8, title: "Authentication and Authorization", completed: false },
-    { id: 9, title: "Deployment", completed: false }
   ]);
   const [newTaskTitle, setNewTaskTitle] = useState('');
+
+  useEffect(() =>
+    taskRepo.query({
+
+    }).subscribe(setTasks)
+    , [])
 
   const addTask = async () => {
     if (newTaskTitle) {
       setTasks([...tasks,
-      {
+      await taskRepo.insert({
         title: newTaskTitle,
         completed: false,
         id: tasks.length + 1
-      }]);
+      })]);
       setNewTaskTitle('');
     }
   }
 
   const setAllCompleted = async (completed: boolean) => {
-    setTasks(tasks.map(task => ({ ...task, completed })));
+   await TasksController.setAllCompleted(completed);
   }
 
   return (
@@ -47,20 +48,30 @@ function App() {
               setTasks(tasks.map(t => t === task ? value : t));
 
             const setCompleted = async (completed: boolean) => {
-              setTask({ ...task, completed });
+              setTask(await taskRepo.save({ ...task, completed }));
             };
             const setTitle = (title: string) => {
               setTask({ ...task, title });
             };
             const deleteTask = async () => {
+              await taskRepo.delete(task)
               setTasks(tasks.filter(t => t !== task));
             };
+
+            const save = async () => {
+              try {
+                await taskRepo.save(task);
+              } catch (error: any) {
+                alert(error.message);
+              }
+            }
             return (
               <div key={task.id}>
                 <input type="checkbox"
                   checked={task.completed}
                   onChange={e => setCompleted(e.target.checked)} />
                 <input
+                  onBlur={save}
                   value={task.title}
                   onChange={e => setTitle(e.target.value)}
                 />
